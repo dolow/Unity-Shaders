@@ -69,37 +69,22 @@
             {
                 fixed4 col = input.color;
 
-                if (_ColorCount <= 0) {
-                    return col;
-                }
+                // let CPU take care of _ColorCount == 0 case
 
-                fixed4 colTo;
-                fixed4 colFrom;
+                int   maxIndex = _ColorCount - 1;
+                fixed unit     = 1.0 / maxIndex;
 
-                fixed unit = 1.0 / _ColorCount;
-                fixed f = 1.0 * _ColorCount - 2.0;
+                float phase  = input.texcoord[_Direction] * maxIndex;
+                fixed volume = input.texcoord[_Direction] % unit / unit;
 
-                float graph = (_Direction == 1)
-                    ? input.texcoord.x
-                    : input.texcoord.y;
+                fixed4 colTo   = _Colors[max(0, phase) + 1];
+                fixed4 colFrom = _Colors[min(phase, maxIndex)];
 
-                for (int i = 0; i < _ColorCount; i++) {
-                    if (graph < unit * f) {
-                        f -= 1.0f;
-                        continue;
-                    }
+                colFrom *= 1.0 - volume;
+                colTo   *= volume;
 
-                    colTo   = _Colors[i + 1];
-                    colFrom = _Colors[i] - colTo;
-                    break;
-                }
-
-                colFrom *= (graph - unit * f) / unit;
-
-                col.r = colTo.r + colFrom.r;
-                col.g = colTo.g + colFrom.g;
-                col.b = colTo.b + colFrom.b;
-                col.a *= UNITY_SAMPLE_1CHANNEL(_MainTex, input.texcoord);
+                col.rgb  = colFrom.rgb + colTo.rgb;
+                col.a   *= UNITY_SAMPLE_1CHANNEL(_MainTex, input.texcoord);
 
                 return col;
             }
